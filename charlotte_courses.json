@@ -15,7 +15,9 @@
     "description": "Municipal course in east Charlotte near I-85 and I-485. Features Mini Verde Bermuda greens, great elevation views, a 3-hole learner's course, and a state-of-the-art instruction facility. One of the highest points in Charlotte.",
     "star_rating": 3.0,
     "driving_range": true,
-    "course_type": "Municipal"
+    "course_type": "Municipal",
+    "latitude": 35.2247,
+    "longitude": -80.7264
   },
   {
     "name": "Dr. Charles L. Sifford Golf Course",
@@ -33,7 +35,9 @@
     "description": "Historic 9-hole course in South End with views of the Charlotte skyline. Named after the first African American to play on the PGA Tour. Bermuda grass tee to green. Great for a quick, affordable round. Rich history and a fun experience for all skill levels.",
     "star_rating": 3.5,
     "driving_range": true,
-    "course_type": "Municipal"
+    "course_type": "Municipal",
+    "latitude": 35.1805,
+    "longitude": -80.8786
   },
   {
     "name": "Harry L. Jones Sr. Golf Course",
@@ -51,7 +55,9 @@
     "description": "Located in southwest Charlotte near the airport. Long championship layout that challenges all skill levels. Features Bermuda from tee to green, a learner's course, and a driving range. One of the best municipal courses in the area. Getting new Bermuda greens in 2026.",
     "star_rating": 3.5,
     "driving_range": true,
-    "course_type": "Municipal"
+    "course_type": "Municipal",
+    "latitude": 35.2186,
+    "longitude": -80.9556
   },
   {
     "name": "Sunset Hills Golf Course",
@@ -69,7 +75,9 @@
     "description": "Old-school affordable course in northwest Mecklenburg County off Brookshire Blvd. Originally a farm pasture turned into a course. Features an 18-hole regulation course, a 9-hole learner's course, and a driving range. Bermuda tee to green. No-frills, budget-friendly golf.",
     "star_rating": 2.5,
     "driving_range": true,
-    "course_type": "Municipal"
+    "course_type": "Municipal",
+    "latitude": 35.2853,
+    "longitude": -80.947
   },
   {
     "name": "The Tradition Golf Club",
@@ -87,7 +95,9 @@
     "description": "Cut through tall pines in northeast Charlotte near University area. Known as one of Charlotte's most challenging layouts. Tight, tree-lined fairways demand strategic shot-making. New Ultradwarf Bermudagrass greens and a Toptracer Range. Locals say it has the best greens in the area.",
     "star_rating": 4.0,
     "driving_range": true,
-    "course_type": "Public"
+    "course_type": "Public",
+    "latitude": 35.3215,
+    "longitude": -80.7568
   },
   {
     "name": "Highland Creek Golf Club",
@@ -105,7 +115,9 @@
     "description": "Winds through towering trees and meandering creeks in a residential community. Features Bermudagrass greens, 65+ bunkers, and water on 11 holes. Recently closed for renovation to hybrid Bermudagrass greens. Has a Beer Garden and Taproom with course views. Practice facility with range, 12,000 sq ft putting green, and practice bunker.",
     "star_rating": 3.5,
     "driving_range": true,
-    "course_type": "Public"
+    "course_type": "Public",
+    "latitude": 35.3094,
+    "longitude": -80.7542
   },
   {
     "name": "Charlotte National Golf Club",
@@ -123,7 +135,9 @@
     "description": "An 18-hole course with 5 sets of tees for every level. Features lakes on several holes and 39 bunkers. Hosts the annual Margaritaville Golf Event and other charitable outings. Solid challenge without being punishing.",
     "star_rating": 3.5,
     "driving_range": true,
-    "course_type": "Public"
+    "course_type": "Public",
+    "latitude": 35.0675,
+    "longitude": -80.6235
   },
   {
     "name": "The Divide Golf Club",
@@ -141,7 +155,9 @@
     "description": "Stretches across Mecklenburg and Union Counties off I-485 in Matthews. Spacious Bermuda fairways with Diamond Zoysia greens. Water comes into play on several holes. The signature 18th is a 524-yard par 5 with an approach over water. Has a Toptracer Range. Fun mix of easy and difficult holes.",
     "star_rating": 3.5,
     "driving_range": true,
-    "course_type": "Public"
+    "course_type": "Public",
+    "latitude": 35.0889,
+    "longitude": -80.6863
   },
   {
     "name": "Rocky River Golf Club",
@@ -156,10 +172,12 @@
     "weekend_price": 86,
     "designer": "Dan Maples",
     "year_opened": 1997,
-    "description": "Premier public course in the Charlotte/Concord area near Charlotte Motor Speedway. Routing flows through natural contours bordered by the Rocky River and wetlands. Famous for 'Gragg's Rock' — a massive boulder in the middle of the 3rd fairway. Part of the Embassy Suites resort. Consistently rated 4.5 stars. One of the best public options near Charlotte.",
+    "description": "Premier public course in the Charlotte/Concord area near Charlotte Motor Speedway. Routing flows through natural contours bordered by the Rocky River and wetlands. Famous for 'Gragg's Rock' \u00e2\u20ac\u201d a massive boulder in the middle of the 3rd fairway. Part of the Embassy Suites resort. Consistently rated 4.5 stars. One of the best public options near Charlotte.",
     "star_rating": 4.5,
     "driving_range": true,
-    "course_type": "Public/Resort"
+    "course_type": "Public/Resort",
+    "latitude": 35.4092,
+    "longitude": -80.7136
   },
   {
     "name": "Birkdale Golf Club",
@@ -177,7 +195,9 @@
     "description": "Located in Huntersville within the Birkdale Village community. Challenging layout with a high slope rating for its length. Getting new Bermuda greens in 2026. A solid test that rewards accuracy over length.",
     "star_rating": 3.5,
     "driving_range": true,
-    "course_type": "Public"
+    "course_type": "Public",
+    "latitude": 35.4254,
+    "longitude": -80.8584
   },
   {
     "name": "Edgewater Golf Club",
@@ -195,7 +215,9 @@
     "description": "Built within a retirement community just across the SC state line. Features A1 bentgrass greens similar to Augusta National. A relatively young course that provides a great challenge. Check the hole-by-hole guide on their website before playing. One of the more unique experiences near Charlotte.",
     "star_rating": 4.0,
     "driving_range": true,
-    "course_type": "Public"
+    "course_type": "Public",
+    "latitude": 34.7236,
+    "longitude": -80.7697
   },
   {
     "name": "Emerald Lake Golf Club",
@@ -213,7 +235,9 @@
     "description": "Well-regarded course in the Matthews area. Solid layout with good variety. A mid-to-upper price option that delivers quality conditions and a good challenge for all levels.",
     "star_rating": 3.5,
     "driving_range": true,
-    "course_type": "Public"
+    "course_type": "Public",
+    "latitude": 35.0826,
+    "longitude": -80.6684
   },
   {
     "name": "Olde Sycamore Golf Plantation",
@@ -231,7 +255,9 @@
     "description": "Popular course in southeast Charlotte winding through a residential community. A well-maintained Tom Jackson design with good variety. Solid conditions and a nice clubhouse experience. One of the more consistently reviewed courses in the area.",
     "star_rating": 3.5,
     "driving_range": true,
-    "course_type": "Semi-Private"
+    "course_type": "Semi-Private",
+    "latitude": 35.1405,
+    "longitude": -80.6919
   },
   {
     "name": "Deer Brook Golf Club",
@@ -249,7 +275,9 @@
     "description": "Affordable public course in south Charlotte near Ballantyne. A good value option that provides a fair challenge without breaking the bank. Solid for a casual weekday round.",
     "star_rating": 3.0,
     "driving_range": true,
-    "course_type": "Public"
+    "course_type": "Public",
+    "latitude": 35.0537,
+    "longitude": -80.8024
   },
   {
     "name": "Skybrook Golf Club",
@@ -267,7 +295,9 @@
     "description": "Semi-private course winding through the Skybrook neighborhood in Huntersville. MiniVerde Bermudagrass greens and scenic views. A challenging but approachable layout. Head to SkyTop Grill after your round for flatbread pizza and a cold beer.",
     "star_rating": 3.5,
     "driving_range": true,
-    "course_type": "Semi-Private"
+    "course_type": "Semi-Private",
+    "latitude": 35.3983,
+    "longitude": -80.8376
   },
   {
     "name": "Eagle Chase Golf Club",
@@ -285,6 +315,8 @@
     "description": "Located east of Charlotte in Marshville. A shorter course that is forgiving yet fun. With 29 reviews on B-Man's Guide, it's one of the more talked-about courses in the area. Good value for the price, especially on weekdays.",
     "star_rating": 3.5,
     "driving_range": true,
-    "course_type": "Public"
+    "course_type": "Public",
+    "latitude": 34.9898,
+    "longitude": -80.3542
   }
 ]

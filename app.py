@@ -1,6 +1,14 @@
 import streamlit as st
 import json
 from pathlib import Path
+import folium
+from streamlit_folium import st_folium
+import requests
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Page config
 st.set_page_config(
@@ -10,7 +18,7 @@ st.set_page_config(
 )
 
 # Load course data
-@st.cache_data
+@st.cache_data(ttl=60)  # Cache for 60 seconds, then reload
 def load_courses():
     data_path = Path(__file__).parent / "charlotte_courses.json"
     with open(data_path, "r") as f:
@@ -93,41 +101,108 @@ elif sort_option == "Yardage: Long to Short":
 # --- Results Count ---
 st.markdown(f"**Showing {len(filtered)} of {len(courses)} courses**")
 
-# --- Display Course Cards ---
-if not filtered:
-    st.info("No courses match your current filters. Try adjusting the sidebar options.")
-else:
-    for course in filtered:
-        with st.container(border=True):
-            col_left, col_right = st.columns([2, 1])
+# --- Create Tabs ---
+tab1, tab2, tab3 = st.tabs(["📋 Course List", "🗺️ Map View", "📸 Photo Gallery"])
 
-            with col_left:
-                st.subheader(course["name"])
-                stars = "⭐" * int(course["star_rating"])
-                if course["star_rating"] % 1 >= 0.5:
-                    stars += "½"
-                st.markdown(f"{stars} ({course['star_rating']}/5)")
-                st.markdown(f"*{course['description']}*")
+# --- TAB 1: Course List ---
+with tab1:
+    if not filtered:
+        st.info("No courses match your current filters. Try adjusting the sidebar options.")
+    else:
+        for course in filtered:
+            with st.container(border=True):
+                col_left, col_right = st.columns([2, 1])
 
-            with col_right:
-                st.metric("Weekday", f"${course['weekday_price']}")
-                st.metric("Weekend", f"${course['weekend_price']}")
+                with col_left:
+                    st.subheader(course["name"])
+                    stars = "⭐" * int(course["star_rating"])
+                    if course["star_rating"] % 1 >= 0.5:
+                        stars += "½"
+                    st.markdown(f"{stars} ({course['star_rating']}/5)")
+                    st.markdown(f"*{course['description']}*")
 
-            st.divider()
+                with col_right:
+                    st.metric("Weekday", f"${course['weekday_price']}")
+                    st.metric("Weekend", f"${course['weekend_price']}")
 
-            c1, c2, c3, c4 = st.columns(4)
-            with c1:
-                st.markdown(f"**Address:** {course['address']}")
-                st.markdown(f"**Phone:** {course['phone']}")
-            with c2:
-                st.markdown(f"**Holes:** {course['holes']}  |  **Par:** {course['par']}")
-                st.markdown(f"**Yardage:** {course['yardage']:,}")
-            with c3:
-                st.markdown(f"**Slope:** {course['slope']}")
-                st.markdown(f"**Course Rating:** {course['rating']}")
-            with c4:
-                st.markdown(f"**Designer:** {course['designer']}")
-                st.markdown(f"**Year Opened:** {course['year_opened']}")
+                st.divider()
 
-            range_status = "✅ Yes" if course["driving_range"] else "❌ No"
-            st.markdown(f"**Driving Range:** {range_status}  |  **Type:** {course['course_type']}")
+                c1, c2, c3, c4 = st.columns(4)
+                with c1:
+                    st.markdown(f"**Address:** {course['address']}")
+                    st.markdown(f"**Phone:** {course['phone']}")
+                with c2:
+                    st.markdown(f"**Holes:** {course['holes']}  |  **Par:** {course['par']}")
+                    st.markdown(f"**Yardage:** {course['yardage']:,}")
+                with c3:
+                    st.markdown(f"**Slope:** {course['slope']}")
+                    st.markdown(f"**Course Rating:** {course['rating']}")
+                with c4:
+                    st.markdown(f"**Designer:** {course['designer']}")
+                    st.markdown(f"**Year Opened:** {course['year_opened']}")
+
+                range_status = "✅ Yes" if course["driving_range"] else "❌ No"
+                st.markdown(f"**Driving Range:** {range_status}  |  **Type:** {course['course_type']}")
+
+# --- TAB 2: Map View ---
+with tab2:
+    if not filtered:
+        st.info("No courses match your current filters.")
+    else:
+        # Filter courses that have coordinates
+        courses_with_coords = [c for c in filtered if 'latitude' in c and 'longitude' in c]
+
+        if not courses_with_coords:
+            st.error("No courses have location data available. Please check the data file.")
+        else:
+            # Calculate center of map
+            avg_lat = sum(c['latitude'] for c in courses_with_coords) / len(courses_with_coords)
+            avg_lng = sum(c['longitude'] for c in courses_with_coords) / len(courses_with_coords)
+
+            # Create map
+            m = folium.Map(location=[avg_lat, avg_lng], zoom_start=10)
+
+            # Add markers for each course
+            for course in courses_with_coords:
+                # Create popup content
+                popup_html = f"""
+                <div style="width: 250px;">
+                    <h4>{course['name']}</h4>
+                    <p><b>Rating:</b> {'⭐' * int(course['star_rating'])} ({course['star_rating']}/5)</p>
+                    <p><b>Weekday:</b> ${course['weekday_price']} | <b>Weekend:</b> ${course['weekend_price']}</p>
+                    <p><b>Holes:</b> {course['holes']} | <b>Par:</b> {course['par']}</p>
+                    <p><b>Phone:</b> {course['phone']}</p>
+                    <p style="margin-top: 10px;">
+                        <a href="https://www.google.com/maps/dir/?api=1&destination={course['latitude']},{course['longitude']}"
+                           target="_blank" style="color: #1f77b4; text-decoration: none;">
+                           📍 Get Directions
+                        </a>
+                    </p>
+                </div>
+                """
+
+                # Marker color based on rating
+                if course['star_rating'] >= 4.0:
+                    color = 'green'
+                elif course['star_rating'] >= 3.0:
+                    color = 'blue'
+                else:
+                    color = 'orange'
+
+                folium.Marker(
+                    location=[course['latitude'], course['longitude']],
+                    popup=folium.Popup(popup_html, max_width=300),
+                    tooltip=course['name'],
+                    icon=folium.Icon(color=color, icon='golf-ball-tee', prefix='fa')
+                ).add_to(m)
+
+            # Display map
+            st_folium(m, width=1400, height=600)
+
+            # Legend
+            st.markdown("**Legend:** 🟢 4+ stars | 🔵 3-4 stars | 🟠 <3 stars")
+
+# --- TAB 3: Photo Gallery ---
+with tab3:
+    st.info("🚧 Photo Gallery coming soon! We'll use Google Places API to fetch real course photos.")
+    st.markdown("**Note:** This feature requires the Places API to be enabled on your Google Cloud project.")
