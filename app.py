@@ -6,9 +6,14 @@ from streamlit_folium import st_folium
 import requests
 import os
 from dotenv import load_dotenv
+import random
+import time
 
 # Load environment variables
 load_dotenv()
+
+# Google Maps API Key
+GOOGLE_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
 
 # Page config
 st.set_page_config(
@@ -16,6 +21,89 @@ st.set_page_config(
     page_icon="⛳",
     layout="wide",
 )
+
+# --- Google Places API Functions ---
+def calculate_distance(lat1, lon1, lat2, lon2):
+    """Calculate distance between two coordinates in miles"""
+    from math import radians, sin, cos, sqrt, atan2
+
+    R = 3959  # Earth's radius in miles
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    return R * c
+
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_place_id(course_name, address, latitude=None, longitude=None):
+    """Search for a place and return its place_id with location verification"""
+    try:
+        # Use Text Search API for better control
+        url = "https://maps.googleapis.com/maps/api/place/textsearch/json"
+
+        # Build query with "golf course" to be more specific
+        query = f"{course_name} golf course {address}"
+
+        params = {
+            'query': query,
+            'key': GOOGLE_API_KEY
+        }
+
+        # Add location bias if coordinates provided
+        if latitude and longitude:
+            params['location'] = f"{latitude},{longitude}"
+            params['radius'] = 5000  # 5km radius
+
+        response = requests.get(url, params=params, timeout=10)
+        data = response.json()
+
+        if data['status'] == 'OK' and data.get('results'):
+            # Get the first result
+            place = data['results'][0]
+            place_id = place['place_id']
+
+            # Verify location if coordinates provided
+            if latitude and longitude:
+                place_lat = place['geometry']['location']['lat']
+                place_lng = place['geometry']['location']['lng']
+                distance = calculate_distance(latitude, longitude, place_lat, place_lng)
+
+                # If place is more than 2 miles away, it's probably wrong
+                if distance > 2.0:
+                    print(f"Warning: {course_name} found {distance:.2f} miles away - might be incorrect")
+                    return None
+
+            return place_id
+        return None
+    except Exception as e:
+        print(f"Error searching for {course_name}: {str(e)}")
+        return None
+
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_place_photos(place_id, max_photos=5):
+    """Get photo references for a place"""
+    try:
+        url = "https://maps.googleapis.com/maps/api/place/details/json"
+        params = {
+            'place_id': place_id,
+            'fields': 'photos',
+            'key': GOOGLE_API_KEY
+        }
+        response = requests.get(url, params=params, timeout=10)
+        data = response.json()
+
+        if data['status'] == 'OK' and 'result' in data:
+            photos = data['result'].get('photos', [])
+            return photos[:max_photos]
+        return []
+    except Exception as e:
+        st.error(f"Error fetching photos: {str(e)}")
+        return []
+
+def get_photo_url(photo_reference, max_width=400):
+    """Generate photo URL from photo reference"""
+    return f"https://maps.googleapis.com/maps/api/place/photo?maxwidth={max_width}&photo_reference={photo_reference}&key={GOOGLE_API_KEY}"
 
 # Load course data
 @st.cache_data(ttl=60)  # Cache for 60 seconds, then reload
@@ -204,5 +292,118 @@ with tab2:
 
 # --- TAB 3: Photo Gallery ---
 with tab3:
-    st.info("🚧 Photo Gallery coming soon! We'll use Google Places API to fetch real course photos.")
-    st.markdown("**Note:** This feature requires the Places API to be enabled on your Google Cloud project.")
+    if not GOOGLE_API_KEY:
+        st.error("Google Maps API key not found. Please add it to your .env file.")
+    else:
+        st.markdown("### 📸 Golf Course Photo Gallery")
+
+        # Course selector dropdown
+        course_names = [c['name'] for c in filtered]
+        selected_option = st.selectbox(
+            "Select a course to view photos:",
+            options=[None] + course_names,
+            format_func=lambda x: "Select a course..." if x is None else x,
+            help="Choose a course to view its photos"
+        )
+
+        st.divider()
+
+        # Default view - Random Showcase
+        if selected_option is None:
+            st.markdown("#### 🌟 Featured Course Photos")
+            st.caption("Explore photos from different courses - select one above to see more")
+
+            # Select 5 random courses
+            random_courses = random.sample(filtered, min(5, len(filtered)))
+
+            with st.spinner("Loading photos from Google Places..."):
+                photo_data = []
+                for course in random_courses:
+                    # Pass coordinates for verification
+                    place_id = get_place_id(
+                        course['name'],
+                        course['address'],
+                        course.get('latitude'),
+                        course.get('longitude')
+                    )
+                    if place_id:
+                        photos = get_place_photos(place_id, max_photos=1)
+                        if photos:
+                            photo_data.append({
+                                'course': course,
+                                'photo_ref': photos[0]['photo_reference']
+                            })
+                        time.sleep(0.1)  # Rate limiting
+
+                if photo_data:
+                    # Display in grid
+                    cols = st.columns(min(3, len(photo_data)))
+                    for idx, item in enumerate(photo_data):
+                        with cols[idx % 3]:
+                            photo_url = get_photo_url(item['photo_ref'], max_width=400)
+                            st.image(photo_url, use_container_width=True)
+                            st.markdown(f"**{item['course']['name']}**")
+                            stars = "⭐" * int(item['course']['star_rating'])
+                            st.caption(f"{stars} ({item['course']['star_rating']}/5)")
+                            st.markdown("---")
+                else:
+                    st.warning("No photos available at the moment. Please try again later.")
+
+        # Specific course selected
+        else:
+            selected_course = next(c for c in filtered if c['name'] == selected_option)
+
+            st.markdown(f"#### {selected_course['name']}")
+            col_info1, col_info2 = st.columns([2, 1])
+            with col_info1:
+                stars = "⭐" * int(selected_course['star_rating'])
+                if selected_course['star_rating'] % 1 >= 0.5:
+                    stars += "½"
+                st.markdown(f"{stars} ({selected_course['star_rating']}/5)")
+                st.caption(selected_course['address'])
+            with col_info2:
+                st.metric("Weekday", f"${selected_course['weekday_price']}")
+
+            st.divider()
+
+            with st.spinner(f"Loading photos for {selected_course['name']}..."):
+                place_id = get_place_id(
+                    selected_course['name'],
+                    selected_course['address'],
+                    selected_course.get('latitude'),
+                    selected_course.get('longitude')
+                )
+
+                if not place_id:
+                    st.error(f"Could not find {selected_course['name']} on Google Places. Try another course.")
+                else:
+                    photos = get_place_photos(place_id, max_photos=5)
+
+                    if not photos:
+                        st.warning(f"No photos found for {selected_course['name']}.")
+                    else:
+                        st.success(f"Found {len(photos)} photo(s)")
+
+                        # Display photos in grid
+                        cols = st.columns(3)
+                        for idx, photo in enumerate(photos):
+                            with cols[idx % 3]:
+                                photo_url = get_photo_url(photo['photo_reference'], max_width=400)
+                                st.image(photo_url, use_container_width=True)
+
+                        # Course details below photos
+                        st.divider()
+                        st.markdown("**Course Details**")
+                        detail_cols = st.columns(4)
+                        with detail_cols[0]:
+                            st.metric("Holes", selected_course['holes'])
+                            st.metric("Par", selected_course['par'])
+                        with detail_cols[1]:
+                            st.metric("Yardage", f"{selected_course['yardage']:,}")
+                            st.metric("Slope", selected_course['slope'])
+                        with detail_cols[2]:
+                            st.metric("Rating", selected_course['rating'])
+                            st.metric("Type", selected_course['course_type'])
+                        with detail_cols[3]:
+                            st.metric("Designer", selected_course['designer'])
+                            st.metric("Opened", selected_course['year_opened'])
