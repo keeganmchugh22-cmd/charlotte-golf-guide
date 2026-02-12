@@ -71,13 +71,15 @@ def get_place_id(course_name, address, latitude=None, longitude=None):
 
                 # If place is more than 2 miles away, it's probably wrong
                 if distance > 2.0:
-                    print(f"Warning: {course_name} found {distance:.2f} miles away - might be incorrect")
+                    print(f"[DEV] Warning: {course_name} found {distance:.2f} miles away - might be incorrect. PlaceID: {place_id}")
                     return None
 
+            print(f"[DEV] Found placeId for {course_name}: {place_id}")
             return place_id
+        print(f"[DEV] No results found for {course_name}")
         return None
     except Exception as e:
-        print(f"Error searching for {course_name}: {str(e)}")
+        print(f"[DEV] Error searching for {course_name}: {str(e)}")
         return None
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
@@ -95,10 +97,12 @@ def get_place_photos(place_id, max_photos=5):
 
         if data['status'] == 'OK' and 'result' in data:
             photos = data['result'].get('photos', [])
+            print(f"[DEV] Fetched {len(photos)} photos for placeId {place_id}")
             return photos[:max_photos]
+        print(f"[DEV] No photos returned for placeId {place_id} (status: {data.get('status')})")
         return []
     except Exception as e:
-        st.error(f"Error fetching photos: {str(e)}")
+        print(f"[DEV] Error fetching photos for {place_id}: {str(e)}")
         return []
 
 def get_photo_url(photo_reference, max_width=400):
@@ -114,10 +118,50 @@ def load_courses():
 
 courses = load_courses()
 
+# --- Verification Function (dev only) ---
+@st.cache_data(ttl=3600)
+def verify_all_courses_photos():
+    """Verify which courses have valid placeIds and photos (dev debugging)"""
+    results = []
+    for course in courses:
+        place_id = get_place_id(
+            course['name'],
+            course['address'],
+            course.get('latitude'),
+            course.get('longitude')
+        )
+        photos = get_place_photos(place_id, max_photos=1) if place_id else []
+        results.append({
+            'name': course['name'],
+            'has_place_id': place_id is not None,
+            'place_id': place_id,
+            'photo_count': len(photos)
+        })
+        time.sleep(0.1)  # Rate limit
+    return results
+
 # --- Header ---
 st.title("⛳ Charlotte Golf Guide")
 st.caption("Your guide to public golf in the Queen City")
 st.divider()
+
+# --- Dev Sidebar (hidden by default) ---
+with st.sidebar.expander("🔧 Dev Tools"):
+    if st.button("Verify all courses (photos coverage)"):
+        st.info("Running verification... check terminal for [DEV] logs")
+        results = verify_all_courses_photos()
+
+        courses_with_photos = sum(1 for r in results if r['photo_count'] > 0)
+        courses_with_place_id = sum(1 for r in results if r['has_place_id'])
+
+        st.write(f"**Summary:** {courses_with_place_id}/{len(results)} courses found in Google Places")
+        st.write(f"**Photos available:** {courses_with_photos}/{len(results)} courses have photos")
+
+        st.divider()
+        st.write("**Details:**")
+        for r in results:
+            status = "✅" if r['photo_count'] > 0 else "❌"
+            st.write(f"{status} {r['name']}: placeId={'✓' if r['has_place_id'] else '✗'}, photos={r['photo_count']}")
 
 # --- Sidebar Filters ---
 st.sidebar.header("Filter Courses")
@@ -297,6 +341,14 @@ with tab3:
     else:
         st.markdown("### 📸 Golf Course Photo Gallery")
 
+        # Initialize session state for stable random selection
+        if 'random_courses_showcase' not in st.session_state:
+            st.session_state.random_courses_showcase = random.sample(filtered, min(5, len(filtered)))
+
+        # Track selected course to reset photos on change
+        if 'last_selected_course' not in st.session_state:
+            st.session_state.last_selected_course = None
+
         # Course selector dropdown
         course_names = [c['name'] for c in filtered]
         selected_option = st.selectbox(
@@ -308,18 +360,17 @@ with tab3:
 
         st.divider()
 
-        # Default view - Random Showcase
+        # STATE A: No course selected → show 5 random photos
         if selected_option is None:
             st.markdown("#### 🌟 Featured Course Photos")
             st.caption("Explore photos from different courses - select one above to see more")
 
-            # Select 5 random courses
-            random_courses = random.sample(filtered, min(5, len(filtered)))
+            # Use stable random selection from session state
+            random_courses = st.session_state.random_courses_showcase
 
             with st.spinner("Loading photos from Google Places..."):
                 photo_data = []
                 for course in random_courses:
-                    # Pass coordinates for verification
                     place_id = get_place_id(
                         course['name'],
                         course['address'],
@@ -347,11 +398,14 @@ with tab3:
                             st.caption(f"{stars} ({item['course']['star_rating']}/5)")
                             st.markdown("---")
                 else:
-                    st.warning("No photos available at the moment. Please try again later.")
+                    st.info("📸 Photos coming soon! Check back later.")
 
-        # Specific course selected
+        # STATE B & C: Course selected
         else:
             selected_course = next(c for c in filtered if c['name'] == selected_option)
+
+            # Log course selection for debugging
+            print(f"[DEV] Gallery: User selected course '{selected_course['name']}'")
 
             st.markdown(f"#### {selected_course['name']}")
             col_info1, col_info2 = st.columns([2, 1])
@@ -366,7 +420,8 @@ with tab3:
 
             st.divider()
 
-            with st.spinner(f"Loading photos for {selected_course['name']}..."):
+            # STATE B: Loading
+            with st.spinner(f"Looking for photos…"):
                 place_id = get_place_id(
                     selected_course['name'],
                     selected_course['address'],
@@ -374,17 +429,18 @@ with tab3:
                     selected_course.get('longitude')
                 )
 
+                # STATE C: Course selected + empty/error
                 if not place_id:
-                    st.error(f"Could not find {selected_course['name']} on Google Places. Try another course.")
+                    print(f"[DEV] Failed to find placeId for {selected_course['name']}")
+                    st.info("📸 Photos coming soon!")
                 else:
                     photos = get_place_photos(place_id, max_photos=5)
+                    print(f"[DEV] {selected_course['name']} — placeId: {place_id}, photos returned: {len(photos)}")
 
                     if not photos:
-                        st.warning(f"No photos found for {selected_course['name']}.")
+                        st.info("📸 Photos coming soon!")
                     else:
-                        st.success(f"Found {len(photos)} photo(s)")
-
-                        # Display photos in grid
+                        # Display photos in grid (no "We found X photos" message)
                         cols = st.columns(3)
                         for idx, photo in enumerate(photos):
                             with cols[idx % 3]:
